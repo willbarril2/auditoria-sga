@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditoria SGA - EAD Center</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .presentation-container {
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .slide {
+            display: none;
+            padding: 60px;
+            min-height: 600px;
+            position: relative;
+        }
+
+        .slide.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-header {
+            border-bottom: 4px solid #667eea;
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            color: #764ba2;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        h3 {
+            color: #555;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+        .content {
+            color: #444;
+            line-height: 1.8;
+            font-size: 1.1em;
+        }
+
+        .content p {
+            margin-bottom: 15px;
+        }
+
+        .list-item {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+        }
+
+        .list-item strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .chart-container {
+            margin: 30px 0;
+            height: 350px;
+            position: relative;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 60px;
+            background: #f8f9fa;
+            border-top: 1px solid #ddd;
+        }
+
+        .nav-button {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .nav-button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .slide-counter {
+            color: #666;
+            font-size: 1em;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-text {
+            font-size: 3em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .license-badge {
+            display: inline-block;
+            background: #e8f4f8;
+            color: #0066cc;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin: 5px;
+            border: 2px solid #0066cc;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 20px;
+            border-left: 4px solid #ffc107;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .footer-info {
+            position: absolute;
+            bottom: 20px;
+            right: 60px;
+            color: #999;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation-container">
+        <!-- Slide 1: Capa -->
+        <div class="slide active">
+            <div class="logo">
+                <div class="logo-text">EAD CENTER</div>
+            </div>
+            <h1 style="text-align: center; margin-top: 60px;">Auditoria do Sistema de Gestão Ambiental (SGA)</h1>
+            <div class="subtitle" style="text-align: center;">Gestão de Resíduos Sólidos</div>
+            <div class="subtitle" style="text-align: center; margin-top: 20px;">Período: Junho a Agosto de 2024</div>
+            <div class="footer-info">
+                <strong>Elaborado por:</strong> Gestor Ambiental<br>
+                <strong>Data:</strong> 30 de agosto de 2024
+            </div>
+        </div>
+
+        <!-- Slide 2: Introdução e Objetivos -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2>Introdução e Objetivos</h2>
+            </div>
+            <div class="content">
+                <div class="list-item">
+                    <strong>Escopo da Gestão Ambiental</strong>
+                    Apresentar o sistema de gestão de resíduos sólidos implementado no EAD Center, abrangendo todas as categorias de resíduos gerados pela operação.
+                </div>
+                <div class="list-item">
+                    <strong>Conformidade com Licenças Ambientais</strong>
+                    Demonstrar o atendimento integral às exigências estabelecidas nas licenças ambientais vigentes e à legislação aplicável.
+                </div>
+                <div class="list-item">
+                    <strong>Avaliação de Desempenho</strong>
+                    Avaliar a eficiência, eficácia e efetividade dos processos de segregação, coleta e destinação final dos resíduos no período trimestral.
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3: Logística e Responsabilidades -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2>Logística e Responsabilidades (Coleta)</h2>
+            </div>
+            <div class="content">
+                <div class="list-item">
+                    <strong>Empresa Terceirizada</strong>
+                    <span class="license-badge">Licença 001</span>
+                    <p>Responsável pela coleta de resíduos perigosos (provenientes de manutenção) e recicláveis, com frequência quinzenal para perigosos e semanal para recicláveis.</p>
+                </div>
+                <div class="list-item">
+                    <strong>Coleta Municipal</strong>
+                    <span class="license-badge">Licença 002</span>
+                    <p>Responsável pela coleta de resíduos orgânicos e rejeitos, realizada duas vezes por semana com destinação para aterro sanitário.</p>
+                </div>
+                <div class="highlight">
+                    <strong>Horário Padronizado:</strong> Todos os fluxos de recolhimento ocorrem das 8h às 18h, garantindo organização e rastreabilidade das operações.
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: Análise Quantitativa - Orgânicos e Rejeitos -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2>Análise Quantitativa – Orgânicos e Rejeitos</h2>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Volume Total (Trimestre)</div>
+                    <div class="stat-value">42 kg</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Média Mensal</div>
+                    <div class="stat-value">14 kg</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="organicosChart"></canvas>
+            </div>
+            <div class="content">
+                <div class="list-item">
+                    <strong>Acondicionamento:</strong> Sacos plásticos e contêineres conforme Resolução Conama nº 275/2001
+                </div>
+                <div class="list-item">
+                    <strong>Destino Final:</strong> Aterro sanitário municipal
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: Análise Quantitativa - Resíduos Perigosos -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2>Análise Quantitativa – Resíduos Perigosos</h2>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Volume Total (Trimestre)</div>
+                    <div class="stat-value">304 kg</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Média Mensal</div>
+                    <div class="stat-value">101 kg</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="perigososChart"></canvas>
+            </div>
+            <div class="content">
+                <div class="list-item">
+                    <strong>Classificação:</strong> Resíduos provenientes de atividades de manutenção
+                </div>
+                <div class="list-item">
+                    <strong>Conformidade:</strong> Acondicionamento e identificação em conformidade rigorosa com NBR 10004
+                </div>
+                <div class="list-item">
+                    <strong>Destino:</strong> Reciclagem para cilindros de gases e aterro industrial para demais itens
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6: Análise Quantitativa - Recicláveis -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2>Análise Quantitativa – Recicláveis</h2>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Volume Total (Trimestre)</div>
+                    <div class="stat-value">90 kg</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Média Mensal</div>
+                    <div class="stat-value">30 kg</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="recicláveisChart"></canvas>
+            </div>
+            <div class="content">
+                <div class="list-item">
+                    <strong>Consistência:</strong> Média estável de 30 kg por mês, com leve pico de 32 kg em agosto
+                </div>
+                <div class="list-item">
+                    <strong>Frequência:</strong> Coleta semanal por empresa licenciada
+                </div>
+                <div class="list-item">
+                    <strong>Destino:</strong> Reintrodução na cadeia produtiva via reciclagem
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Avaliação Crítica do SGA -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2>Avaliação Crítica do SGA</h2>
+            </div>
+            <div class="content">
+                <h3>Eficiência, Eficácia e Efetividade</h3>
+                <div class="list-item">
+                    <strong>Eficiência</strong>
+                    Otimização da coleta com horários fixos das 8h às 18h e segregação adequada na central de resíduos, garantindo organização operacional e redução de custos logísticos.
+                </div>
+                <div class="list-item">
+                    <strong>Eficácia</strong>
+                    Alcance de 100% de destinação correta conforme legislação vigente (Conama 275/2001 e NBR 10004), comprovando o atendimento integral aos requisitos legais.
+                </div>
+                <div class="list-item">
+                    <strong>Efetividade</strong>
+                    Redução do impacto ambiental por meio da reciclagem de 100% dos cilindros de gases e materiais recicláveis monitorados, contribuindo para economia circular e sustentabilidade.
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Conclusão -->
+        <div class="slide">
+            <div class="slide-header">
+                <h2>Conclusão</h2>
+            </div>
+            <div class="content">
+                <div class="highlight">
+                    <h3>Maturidade do Sistema de Gestão</h3>
+                    <p>O Sistema de Gestão Ambiental do EAD Center demonstra alto grau de maturidade no controle de registros e na gestão operacional de resíduos sólidos.</p>
+                </div>
+                <div class="list-item">
+                    <strong>Conformidade Integral</strong>
+                    As evidências documentais apresentadas (planilhas de controle, relatórios mensais e licenças ambientais válidas) comprovam o atendimento integral às condicionantes ambientais estabelecidas pelos órgãos competentes.
+                </div>
+                <div class="list-item">
+                    <strong>Rastreabilidade e Transparência</strong>
+                    Os processos implementados garantem rastreabilidade completa desde a geração até a destinação final, assegurando transparência e responsabilidade ambiental.
+                </div>
+                <div class="list-item">
+                    <strong>Melhoria Contínua</strong>
+                    A análise trimestral dos dados permite identificar oportunidades de melhoria contínua nos processos de gestão de resíduos, alinhada aos princípios do ciclo PDCA.
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation">
+            <button class="nav-button" id="prevBtn" onclick="changeSlide(-1)">← Anterior</button>
+            <span class="slide-counter"><span id="currentSlide">1</span> / 8</span>
+            <button class="nav-button" id="nextBtn" onclick="changeSlide(1)">Próximo →</button>
+        </div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            
+            document.getElementById('currentSlide').textContent = currentSlide + 1;
+            document.getElementById('prevBtn').disabled = currentSlide === 0;
+            document.getElementById('nextBtn').disabled = currentSlide === totalSlides - 1;
+
+            if (currentSlide === 3) createOrganicosChart();
+            if (currentSlide === 4) createPerigososChart();
+            if (currentSlide === 5) createRecicláveisChart();
+        }
+
+        function changeSlide(direction) {
+            showSlide(currentSlide + direction);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') changeSlide(-1);
+            if (e.key === 'ArrowRight') changeSlide(1);
+        });
+
+        function createOrganicosChart() {
+            const ctx = document.getElementById('organicosChart');
+            if (!ctx || ctx.chart) return;
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Junho', 'Julho', 'Agosto'],
+                    datasets: [{
+                        label: 'Quantidade (kg)',
+                        data: [12, 16, 14],
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true },
+                        title: { display: true, text: 'Variação Mensal - Orgânicos e Rejeitos', font: { size: 16 } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Quantidade (kg)' } }
+                    }
+                }
+            });
+        }
+
+        function createPerigososChart() {
+            const ctx = document.getElementById('perigososChart');
+            if (!ctx || ctx.chart) return;
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Junho', 'Julho', 'Agosto'],
+                    datasets: [{
+                        label: 'Quantidade (kg)',
+                        data: [105, 100, 99],
+                        backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true },
+                        title: { display: true, text: 'Variação Mensal - Resíduos Perigosos', font: { size: 16 } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Quantidade (kg)' } }
+                    }
+                }
+            });
+        }
+
+        function createRecicláveisChart() {
+            const ctx = document.getElementById('recicláveisChart');
+            if (!ctx || ctx.chart) return;
+            
+            ctx.chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Junho', 'Julho', 'Agosto'],
+                    datasets: [{
+                        label: 'Quantidade (kg)',
+                        data: [30, 28, 32],
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true },
+                        title: { display: true, text: 'Variação Mensal - Recicláveis', font: { size: 16 } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Quantidade (kg)' } }
+                    }
+                }
+            });
+        }
+
+        showSlide(0);
+    </script>
+</body>
+</html>
